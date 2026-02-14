@@ -1,6 +1,7 @@
 """Payment CRUD REST API routes."""
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
@@ -22,24 +23,24 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/payments", tags=["payments"])
 
 
-def _payment_to_response(payment: object) -> PaymentResponse:
+def _payment_to_response(payment: Any) -> PaymentResponse:
     """Convert a Payment protocol object to a response schema."""
     return PaymentResponse(
-        id=str(payment.id),  # type: ignore[union-attr]
+        id=str(payment.id),
         order_id=str(
             getattr(payment, "order_id", "") or getattr(payment.order, "id", "")
-        ),  # type: ignore[union-attr]
-        amount_required=payment.amount_required,  # type: ignore[union-attr]
-        currency=payment.currency,  # type: ignore[union-attr]
-        status=payment.status,  # type: ignore[union-attr]
-        backend=payment.backend,  # type: ignore[union-attr]
-        external_id=payment.external_id,  # type: ignore[union-attr]
-        description=payment.description,  # type: ignore[union-attr]
-        amount_paid=payment.amount_paid,  # type: ignore[union-attr]
-        amount_locked=payment.amount_locked,  # type: ignore[union-attr]
-        amount_refunded=payment.amount_refunded,  # type: ignore[union-attr]
-        fraud_status=payment.fraud_status,  # type: ignore[union-attr]
-        fraud_message=payment.fraud_message,  # type: ignore[union-attr]
+        ),
+        amount_required=payment.amount_required,
+        currency=payment.currency,
+        status=payment.status,
+        backend=payment.backend,
+        external_id=payment.external_id,
+        description=payment.description,
+        amount_paid=payment.amount_paid,
+        amount_locked=payment.amount_locked,
+        amount_refunded=payment.amount_refunded,
+        fraud_status=payment.fraud_status,
+        fraud_message=payment.fraud_message,
     )
 
 
@@ -103,7 +104,7 @@ async def create_payment(
     result = await flow.prepare(payment)
 
     return CreatePaymentResponse(
-        payment_id=str(payment.id),  # type: ignore[union-attr]
+        payment_id=str(payment.id),
         redirect_url=result.get("redirect_url"),
         method=result.get("method", "GET"),
         form_data=result.get("form_data"),

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from fastapi_getpaid.contrib.sqlalchemy.models import Base, PaymentModel
+from fastapi_getpaid.contrib.sqlalchemy.models import Base
 from fastapi_getpaid.contrib.sqlalchemy.repository import (
     SQLAlchemyPaymentRepository,
 )

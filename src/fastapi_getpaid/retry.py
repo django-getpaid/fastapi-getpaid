@@ -1,7 +1,7 @@
 """Webhook retry mechanism with exponential backoff."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from getpaid_core.flow import PaymentFlow
 from getpaid_core.protocols import PaymentRepository
@@ -21,7 +21,7 @@ def compute_next_retry_at(
     delay = backoff_seconds * 2^(attempt - 1)
     """
     delay = backoff_seconds * (2 ** (attempt - 1))
-    return datetime.now(tz=timezone.utc) + timedelta(seconds=delay)
+    return datetime.now(tz=UTC) + timedelta(seconds=delay)
 
 
 async def process_due_retries(

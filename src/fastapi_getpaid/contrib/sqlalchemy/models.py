@@ -1,7 +1,7 @@
 """SQLAlchemy 2.0 async models for payment processing."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import JSON, DateTime, Numeric, String, Text
@@ -50,12 +50,12 @@ class PaymentModel(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(tz=timezone.utc),
-        onupdate=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
+        onupdate=lambda: datetime.now(tz=UTC),
     )
 
     def is_fully_paid(self) -> bool:
@@ -93,5 +93,5 @@ class CallbackRetryModel(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.now(tz=UTC),
     )

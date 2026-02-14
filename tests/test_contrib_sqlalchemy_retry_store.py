@@ -1,6 +1,6 @@
 """Tests for SQLAlchemy retry store implementation."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy.ext.asyncio import (
@@ -65,7 +65,7 @@ async def test_get_due_retries_finds_due(store, session_factory):
             payload={"status": "paid"},
             headers={},
             attempts=1,
-            next_retry_at=datetime.now(tz=timezone.utc) - timedelta(minutes=1),
+            next_retry_at=datetime.now(tz=UTC) - timedelta(minutes=1),
             status="pending",
         )
         session.add(retry)
@@ -84,7 +84,7 @@ async def test_get_due_retries_skips_future(store, session_factory):
             payload={"status": "paid"},
             headers={},
             attempts=1,
-            next_retry_at=datetime.now(tz=timezone.utc) + timedelta(hours=1),
+            next_retry_at=datetime.now(tz=UTC) + timedelta(hours=1),
             status="pending",
         )
         session.add(retry)

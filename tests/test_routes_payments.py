@@ -130,9 +130,9 @@ def test_create_payment(client, mock_repo, mock_payment, mock_order):
     register_exception_handlers(app)
     app.include_router(router)
 
-    with patch("fastapi_getpaid.routes.payments.PaymentFlow") as MockFlow:
+    with patch("fastapi_getpaid.routes.payments.PaymentFlow") as mock_flow_cls:
         instance = AsyncMock()
-        MockFlow.return_value = instance
+        mock_flow_cls.return_value = instance
         instance.create_payment = AsyncMock(return_value=mock_payment)
         instance.prepare = AsyncMock(
             return_value={

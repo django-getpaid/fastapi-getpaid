@@ -1,6 +1,6 @@
 """Tests for the webhook retry mechanism."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -45,7 +45,7 @@ def test_compute_backoff():
     t2 = compute_next_retry_at(attempt=2, backoff_seconds=base)
     t3 = compute_next_retry_at(attempt=3, backoff_seconds=base)
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     # Each attempt should be further in the future
     assert t1 > now
     assert t2 > t1
@@ -56,7 +56,7 @@ def test_compute_backoff_first_attempt():
     """First attempt backoff is base_seconds."""
     from fastapi_getpaid.retry import compute_next_retry_at
 
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     result = compute_next_retry_at(attempt=1, backoff_seconds=60)
     expected_min = now + timedelta(seconds=55)
     expected_max = now + timedelta(seconds=65)
@@ -96,9 +96,9 @@ async def test_process_retries_success(mock_retry_store, mock_repo, config):
         ]
     )
 
-    with patch("fastapi_getpaid.retry.PaymentFlow") as MockFlow:
+    with patch("fastapi_getpaid.retry.PaymentFlow") as mock_flow_cls:
         instance = AsyncMock()
-        MockFlow.return_value = instance
+        mock_flow_cls.return_value = instance
         instance.handle_callback = AsyncMock()
 
         processed = await process_due_retries(
@@ -134,9 +134,9 @@ async def test_process_retries_failure_under_max(
         ]
     )
 
-    with patch("fastapi_getpaid.retry.PaymentFlow") as MockFlow:
+    with patch("fastapi_getpaid.retry.PaymentFlow") as mock_flow_cls:
         instance = AsyncMock()
-        MockFlow.return_value = instance
+        mock_flow_cls.return_value = instance
         instance.handle_callback = AsyncMock(
             side_effect=Exception("still failing")
         )
@@ -173,9 +173,9 @@ async def test_process_retries_exhausted(mock_retry_store, mock_repo, config):
         ]
     )
 
-    with patch("fastapi_getpaid.retry.PaymentFlow") as MockFlow:
+    with patch("fastapi_getpaid.retry.PaymentFlow") as mock_flow_cls:
         instance = AsyncMock()
-        MockFlow.return_value = instance
+        mock_flow_cls.return_value = instance
         instance.handle_callback = AsyncMock(
             side_effect=Exception("still failing")
         )

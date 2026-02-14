@@ -1,13 +1,7 @@
 """Tests for FastAPI dependency providers."""
 
-from decimal import Decimal
-from unittest.mock import AsyncMock
-
-import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
-
-from getpaid_core.protocols import Order, Payment, PaymentRepository
 
 
 class MockPaymentRepository:
@@ -66,7 +60,7 @@ def test_get_config_from_app_state():
 def test_get_repository_from_app_state():
     """get_repository reads repository from app.state."""
     from fastapi_getpaid.config import GetpaidConfig
-    from fastapi_getpaid.dependencies import get_config, get_repository
+    from fastapi_getpaid.dependencies import get_repository
 
     app = FastAPI()
     repo = MockPaymentRepository()
