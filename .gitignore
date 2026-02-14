@@ -45,6 +45,9 @@ dmypy.json
 # UV
 uv.lock
 
+# Sphinx docs
+docs/_build/
+
 # OS
 .DS_Store
 Thumbs.db
