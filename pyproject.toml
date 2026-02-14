@@ -17,11 +17,19 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Office/Business :: Financial",
 ]
+keywords = ["fastapi", "payments", "getpaid", "payment-gateway", "payment-processing"]
 dependencies = [
     "python-getpaid-core>=0.1.0",
     "fastapi>=0.115.0",
     "pydantic-settings>=2.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/django-getpaid/fastapi-getpaid"
+Documentation = "https://fastapi-getpaid.readthedocs.io/"
+Repository = "https://github.com/django-getpaid/fastapi-getpaid"
+Changelog = "https://github.com/django-getpaid/fastapi-getpaid/blob/main/docs/changelog.md"
+"Issue Tracker" = "https://github.com/django-getpaid/fastapi-getpaid/issues"
 
 [project.optional-dependencies]
 sqlalchemy = [
@@ -49,9 +57,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fastapi_getpaid"]
-
-[tool.uv.sources]
-python-getpaid-core = { path = "../getpaid-core", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
