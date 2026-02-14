@@ -3,7 +3,6 @@
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import inspect
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
