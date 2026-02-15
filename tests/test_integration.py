@@ -1,9 +1,10 @@
 """Full-stack integration tests: router + real SQLAlchemy repo + retry store."""
 
-import asyncio
 from decimal import Decimal
+from functools import partial
 from unittest.mock import AsyncMock, patch
 
+import anyio
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from getpaid_core.exceptions import CommunicationError
@@ -156,17 +157,16 @@ def test_callback_with_retry_on_failure(
     )
 
     # Pre-populate a payment in the DB so the callback route can find it.
-    loop = asyncio.new_event_loop()
-    payment = loop.run_until_complete(
-        repo.create(
+    payment = anyio.run(
+        partial(
+            repo.create,
             order_id="order-cb-1",
             amount_required=Decimal("50.00"),
             currency="PLN",
             backend="dummy",
             description="Callback test",
-        )
+        ),
     )
-    loop.close()
 
     app = _make_full_app(
         config=getpaid_config,
@@ -205,9 +205,7 @@ def test_callback_with_retry_on_failure(
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
-    loop = asyncio.new_event_loop()
-    retries = loop.run_until_complete(_count_retries())
-    loop.close()
+    retries = anyio.run(_count_retries)
 
     assert len(retries) == 1
     retry = retries[0]
@@ -228,17 +226,16 @@ def test_success_redirect(
     )
 
     # Pre-populate a payment so the redirect route can find it.
-    loop = asyncio.new_event_loop()
-    payment = loop.run_until_complete(
-        repo.create(
+    payment = anyio.run(
+        partial(
+            repo.create,
             order_id="order-redir-1",
             amount_required=Decimal("75.00"),
             currency="PLN",
             backend="dummy",
             description="Redirect test",
-        )
+        ),
     )
-    loop.close()
 
     app = _make_full_app(
         config=getpaid_config,
