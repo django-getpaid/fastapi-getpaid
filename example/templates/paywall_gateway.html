@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Gateway — fastapi-getpaid Example{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Fake Payment Gateway</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-body-secondary">{{ message | default("Payment authorization") }}</p>
+
+                <table class="table table-sm">
+                    {% if ext_id %}
+                    <tr>
+                        <th>Payment ID</th>
+                        <td><code>{{ ext_id[:8] if ext_id|length > 8 else ext_id }}...</code></td>
+                    </tr>
+                    {% endif %}
+                    {% if value %}
+                    <tr>
+                        <th>Amount</th>
+                        <td><strong>{{ value }} {{ currency }}</strong></td>
+                    </tr>
+                    {% endif %}
+                    {% if description %}
+                    <tr>
+                        <th>Description</th>
+                        <td>{{ description }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+
+                <hr>
+                <p>Do you authorize this payment?</p>
+
+                <form method="post" action="/paywall/authorize">
+                    <input type="hidden" name="callback" value="{{ callback }}">
+                    <input type="hidden" name="success_url" value="{{ success_url }}">
+                    <input type="hidden" name="failure_url" value="{{ failure_url }}">
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" name="authorize_payment" value="1"
+                                class="btn btn-success btn-lg">
+                            Approve Payment
+                        </button>
+                        <button type="submit" name="authorize_payment" value="0"
+                                class="btn btn-danger btn-lg">
+                            Reject Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-body-secondary text-center">
+                <small>This is a simulated payment gateway for testing purposes.</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

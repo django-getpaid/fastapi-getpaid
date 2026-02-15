@@ -60,12 +60,15 @@ async def process_due_retries(
             repository=repository,
             config=config.backends,
         )
+        raw_body = payload.get("_raw_body")
+        callback_kwargs = {"raw_body": raw_body} if raw_body is not None else {}
 
         try:
             await flow.handle_callback(
                 payment=payment,
                 data=payload,
                 headers=headers,
+                **callback_kwargs,
             )
             await retry_store.mark_succeeded(retry_id)
             logger.info(

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Orders — fastapi-getpaid Example{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>Create New Order</h2>
+        <form method="post" action="/orders/create">
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <input type="text" class="form-control" id="description"
+                       name="description" required placeholder="e.g. T-shirt, Book">
+            </div>
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount</label>
+                <input type="number" class="form-control" id="amount"
+                       name="amount" step="0.01" min="0.01" required
+                       placeholder="99.99">
+            </div>
+            <div class="mb-3">
+                <label for="currency" class="form-label">Currency</label>
+                <select class="form-select" id="currency" name="currency">
+                    <option value="PLN" selected>PLN</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Create Order</button>
+        </form>
+    </div>
+
+    <div class="col-md-6">
+        <h2>Existing Orders</h2>
+        {% if orders %}
+        <div class="list-group">
+            {% for order in orders %}
+            <a href="/orders/{{ order.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h5 class="mb-1">{{ order.description }}</h5>
+                    <small>{{ order.amount }} {{ order.currency }}</small>
+                </div>
+                <small class="text-body-secondary">{{ order.id[:8] }}...</small>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-body-secondary">No orders yet. Create one using the form.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

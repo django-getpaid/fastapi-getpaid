@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from getpaid_core.exceptions import CommunicationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -130,9 +131,6 @@ def test_create_and_get_payment(
                 json={
                     "order_id": "order-1",
                     "backend": "dummy",
-                    "amount": "100.00",
-                    "currency": "PLN",
-                    "description": "Integration test",
                 },
             )
 
@@ -182,7 +180,7 @@ def test_callback_with_retry_on_failure(
         instance = AsyncMock()
         mock_flow_cls.return_value = instance
         instance.handle_callback = AsyncMock(
-            side_effect=Exception("gateway timeout"),
+            side_effect=CommunicationError("gateway timeout"),
         )
 
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -214,7 +212,8 @@ def test_callback_with_retry_on_failure(
     assert len(retries) == 1
     retry = retries[0]
     assert retry.payment_id == payment.id
-    assert retry.payload == {"status": "paid"}
+    assert retry.payload["status"] == "paid"
+    assert retry.payload["_raw_body"] == '{"status":"paid"}'
     assert retry.status == "pending"
     assert retry.attempts == 0
 

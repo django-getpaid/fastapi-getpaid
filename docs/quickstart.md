@@ -8,6 +8,12 @@ Install fastapi-getpaid with the SQLAlchemy extras:
 pip install fastapi-getpaid[sqlalchemy]
 ```
 
+Or with uv:
+
+```bash
+uv add fastapi-getpaid --extra sqlalchemy
+```
+
 ## Minimal example
 
 Below is a complete working example that sets up payment processing with
@@ -54,8 +60,9 @@ class SimpleOrderResolver:
     """
 
     async def resolve(self, order_id: str) -> Order:
-        # Return an object satisfying the Order protocol
-        ...
+        # Return an object satisfying the Order protocol.
+        # See the example app for a full implementation.
+        raise NotImplementedError("Implement order lookup here")
 
 
 # --- Build the app ---
@@ -84,3 +91,31 @@ uvicorn myapp:app --reload
 ```
 
 The payment endpoints will be available under `/api/payments/`.
+
+## Example application
+
+A full working example application is included in the
+[`example/`](https://github.com/django-getpaid/fastapi-getpaid/tree/main/example)
+directory of this repository. It includes:
+
+- An order management UI with Jinja2 templates
+- A **fake payment gateway simulator** (paywall) that lets you approve or
+  reject payments interactively
+- SQLAlchemy async storage with automatic table creation
+- Full payment lifecycle: create order, initiate payment, authorize at
+  gateway, receive callback, view result
+
+To run it:
+
+```bash
+cd example
+uv sync
+uv run uvicorn app:app --reload
+```
+
+Then open `http://127.0.0.1:8000` in your browser.
+
+## Next steps
+
+- {doc}`configuration` — all available settings and environment variables
+- {doc}`api` — full API reference (protocols, schemas, endpoints)

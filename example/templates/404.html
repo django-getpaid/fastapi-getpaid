@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Not Found — fastapi-getpaid Example{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        <h2>404 — Not Found</h2>
+        <p>{{ message | default("The requested page was not found.") }}</p>
+        <a href="/" class="btn btn-outline-secondary">Back to Home</a>
+    </div>
+</div>
+{% endblock %}

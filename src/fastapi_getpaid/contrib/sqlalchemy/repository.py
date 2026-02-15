@@ -29,7 +29,15 @@ class SQLAlchemyPaymentRepository:
             return result
 
     async def create(self, **kwargs) -> PaymentModel:
-        """Create a new payment record."""
+        """Create a new payment record.
+
+        Handles the ``order`` → ``order_id`` conversion expected by
+        :class:`PaymentFlow.create_payment` which passes the full Order
+        object as ``order=<Order>``.
+        """
+        order = kwargs.pop("order", None)
+        if order is not None and "order_id" not in kwargs:
+            kwargs["order_id"] = str(getattr(order, "id", order))
         async with self._session_factory() as session:
             payment = PaymentModel(**kwargs)
             session.add(payment)

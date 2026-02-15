@@ -4,6 +4,7 @@ import logging
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from getpaid_core.exceptions import CommunicationError, InvalidCallbackError
 from getpaid_core.flow import PaymentFlow
 from getpaid_core.protocols import PaymentRepository
 
@@ -31,6 +32,7 @@ async def handle_callback(
             raise PaymentNotFoundError(payment_id) from exc
         raise
 
+    raw_body = await request.body()
     data = await request.json()
     headers = dict(request.headers)
 
@@ -44,14 +46,19 @@ async def handle_callback(
             payment=payment,
             data=data,
             headers=headers,
+            raw_body=raw_body,
         )
-    except Exception as exc:
+    except InvalidCallbackError:
+        raise
+    except CommunicationError as exc:
         # Store for retry if retry store is available
         retry_store = getattr(request.app.state, "getpaid_retry_store", None)
         if retry_store is not None:
+            retry_payload = dict(data)
+            retry_payload["_raw_body"] = raw_body.decode("utf-8")
             await retry_store.store_failed_callback(
                 payment_id=payment_id,
-                payload=data,
+                payload=retry_payload,
                 headers=headers,
             )
             logger.warning(

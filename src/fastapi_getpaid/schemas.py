@@ -10,9 +10,6 @@ class CreatePaymentRequest(BaseModel):
 
     order_id: str
     backend: str
-    amount: Decimal
-    currency: str
-    description: str | None = None
 
 
 class PaymentResponse(BaseModel):

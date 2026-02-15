@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Payment {{ status | capitalize }} — fastapi-getpaid Example{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 text-center">
+        {% if status == "success" %}
+        <div class="alert alert-success" role="alert">
+            <h4 class="alert-heading">Payment Successful</h4>
+            <p>Your payment has been processed successfully.</p>
+            {% if payment_id %}
+            <hr>
+            <p class="mb-0"><small>Payment ID: <code>{{ payment_id }}</code></small></p>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="alert alert-danger" role="alert">
+            <h4 class="alert-heading">Payment Failed</h4>
+            <p>Your payment was not processed.</p>
+            {% if payment_id %}
+            <hr>
+            <p class="mb-0"><small>Payment ID: <code>{{ payment_id }}</code></small></p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <a href="/" class="btn btn-outline-secondary">Back to Orders</a>
+    </div>
+</div>
+{% endblock %}

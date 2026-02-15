@@ -1,6 +1,6 @@
 [project]
 name = "fastapi-getpaid"
-version = "0.1.0"
+version = "0.1.1"
 description = "FastAPI framework adapter for getpaid payment processing"
 readme = "README.md"
 license = "MIT"

@@ -96,9 +96,6 @@ async def create_payment(
     payment = await flow.create_payment(
         order=order,
         backend_slug=body.backend,
-        amount=body.amount,
-        currency=body.currency,
-        description=body.description,
     )
 
     result = await flow.prepare(payment)

@@ -8,26 +8,21 @@ def test_create_payment_request_valid():
     req = CreatePaymentRequest(
         order_id="order-123",
         backend="paynow",
-        amount=Decimal("99.99"),
-        currency="PLN",
-        description="Test payment",
     )
     assert req.order_id == "order-123"
     assert req.backend == "paynow"
-    assert req.amount == Decimal("99.99")
 
 
-def test_create_payment_request_optional_fields():
-    """CreatePaymentRequest has optional description."""
+def test_create_payment_request_requires_only_order_and_backend():
+    """CreatePaymentRequest matches route contract fields."""
     from fastapi_getpaid.schemas import CreatePaymentRequest
 
     req = CreatePaymentRequest(
         order_id="order-1",
         backend="dummy",
-        amount=Decimal("10.00"),
-        currency="PLN",
     )
-    assert req.description is None
+    assert req.order_id == "order-1"
+    assert req.backend == "dummy"
 
 
 def test_payment_response_serialization():
