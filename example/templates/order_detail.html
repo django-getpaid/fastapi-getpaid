@@ -27,9 +27,18 @@
 
         <h3>Pay for this order</h3>
         <form method="post" action="/orders/{{ order.id }}/pay">
-            <p>Click below to initiate a payment using the dummy backend.
-               You will be redirected to the fake payment gateway where you
-               can approve or reject the payment.</p>
+            <div class="mb-3">
+                <label for="backend" class="form-label">Payment Backend</label>
+                <select name="backend" id="backend" class="form-select">
+                    <option value="dummy">Dummy (Fake Gateway)</option>
+                    <option value="payu">PayU (Sandbox)</option>
+                    <option value="paynow">Paynow (Sandbox)</option>
+                </select>
+                <div class="form-text">
+                    Dummy backend uses the built-in paywall simulator.
+                    PayU and Paynow use sandbox environments (no real transactions).
+                </div>
+            </div>
             <button type="submit" class="btn btn-success btn-lg">
                 Pay {{ order.amount }} {{ order.currency }}
             </button>

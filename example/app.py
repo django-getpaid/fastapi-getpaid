@@ -2,27 +2,34 @@
 
 This app provides:
 - A simple order management UI (create orders, view order details)
-- Payment processing via fastapi-getpaid with the dummy backend
+- Payment processing via fastapi-getpaid with multiple backends
 - A fake payment gateway simulator (paywall) for interactive testing
 
 Payment flow:
 1. User creates an order on the home page
 2. User clicks "Pay" on the order detail page
 3. The app calls the fastapi-getpaid REST API to create a payment
-4. The app registers the payment with the fake gateway (paywall)
-5. User is redirected to the paywall authorization page
+4. For dummy backend: payment is registered with the fake gateway (paywall)
+5. User is redirected to the payment authorization page
 6. User approves or rejects the payment
-7. The paywall sends a callback to the fastapi-getpaid callback endpoint
+7. The gateway sends a callback to the fastapi-getpaid callback endpoint
 8. The payment status is updated via the FSM
 9. User is redirected back to the order detail page
+
+Supported backends:
+- dummy: Built-in fake processor with paywall simulator
+- payu: PayU payment gateway (sandbox keys by default)
+- paynow: Paynow payment gateway (sandbox keys by default)
 """
 
+import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from decimal import Decimal
 
 import httpx
-from fastapi import FastAPI, Form, Request
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
@@ -30,6 +37,20 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from getpaid_core.backends.dummy import DummyProcessor
 from getpaid_core.registry import registry as global_registry
+
+try:
+    from getpaid_payu.processor import PayUProcessor
+
+    PAYU_AVAILABLE = True
+except ImportError:
+    PAYU_AVAILABLE = False
+
+try:
+    from getpaid_paynow.processor import PaynowProcessor
+
+    PAYNOW_AVAILABLE = True
+except ImportError:
+    PAYNOW_AVAILABLE = False
 
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.contrib.sqlalchemy.models import Base
@@ -42,6 +63,8 @@ from fastapi_getpaid.router import create_payment_router
 from models import Order as OrderModel
 from paywall import configure as configure_paywall
 from paywall import router as paywall_router
+
+logger = logging.getLogger(__name__)
 
 # --- Database setup ---
 
@@ -73,16 +96,41 @@ class ExampleOrderResolver:
 
 # --- Configuration ---
 
-# The dummy backend is used for demonstration. In a real app you would
-# configure a real payment gateway backend (e.g. PayU, Przelewy24).
+BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8000")
+
 config = GetpaidConfig(
-    default_backend="dummy",
-    success_url="http://127.0.0.1:8000/order-success",
-    failure_url="http://127.0.0.1:8000/order-failure",
+    default_backend=os.environ.get("DEFAULT_BACKEND", "dummy"),
+    success_url=f"{BASE_URL}/order-success",
+    failure_url=f"{BASE_URL}/order-failure",
     backends={
         "dummy": {
             "module": "getpaid_core.backends.dummy",
-            "gateway": "http://127.0.0.1:8000/paywall/gateway",
+            "gateway": f"{BASE_URL}/paywall/gateway",
+            "confirmation_method": "push",
+        },
+        "payu": {
+            "module": "getpaid_payu.processor",
+            "pos_id": os.environ.get("PAYU_POS_ID", "300746"),
+            "second_key": os.environ.get(
+                "PAYU_SECOND_KEY", "b6ca15b0d1020e8094d9b5f8d163db54"
+            ),
+            "oauth_id": os.environ.get("PAYU_OAUTH_ID", "300746"),
+            "oauth_secret": os.environ.get(
+                "PAYU_OAUTH_SECRET", "2ee86a66e5d97e3fadc400c9f19b065d"
+            ),
+            "sandbox": os.environ.get("PAYU_SANDBOX", "true").lower() == "true",
+            "confirmation_method": "push",
+        },
+        "paynow": {
+            "module": "getpaid_paynow.processor",
+            "api_key": os.environ.get(
+                "PAYNOW_API_KEY", "d2e1d881-40b0-4b7e-9168-181bae3dc4e0"
+            ),
+            "signature_key": os.environ.get(
+                "PAYNOW_SIGNATURE_KEY", "8e42a868-5562-440d-817c-4921632fb049"
+            ),
+            "sandbox": os.environ.get("PAYNOW_SANDBOX", "true").lower()
+            == "true",
             "confirmation_method": "push",
         },
     },
@@ -93,10 +141,21 @@ config = GetpaidConfig(
 repository = SQLAlchemyPaymentRepository(session_factory)
 retry_store = SQLAlchemyRetryStore(session_factory)
 
-# Manually register the dummy backend since it is not installed
-# as a separate package with entry_points. The global registry
-# is used by PaymentFlow internally.
 global_registry.register(DummyProcessor)
+
+if PAYU_AVAILABLE:
+    global_registry.register(PayUProcessor)
+    logger.info("PayU processor registered")
+else:
+    logger.warning("PayU processor not available (getpaid-payu not installed)")
+
+if PAYNOW_AVAILABLE:
+    global_registry.register(PaynowProcessor)
+    logger.info("Paynow processor registered")
+else:
+    logger.warning(
+        "Paynow processor not available (getpaid-paynow not installed)"
+    )
 
 payment_router = create_payment_router(
     config=config,
@@ -208,6 +267,7 @@ async def order_detail(request: Request, order_id: str) -> HTMLResponse:
 async def initiate_payment(
     request: Request,
     order_id: str,
+    backend: str = Form("dummy"),
 ) -> RedirectResponse:
     """Initiate a payment for an order.
 
@@ -216,64 +276,101 @@ async def initiate_payment(
 
     1. Call ``POST /api/payments/`` to create a payment and run
        the payment flow (create + prepare via the backend).
-    2. The dummy backend returns a placeholder redirect URL, so
-       we register the payment with the fake gateway (paywall)
-       and redirect the user there.
+    2. For dummy backend: register with paywall and redirect.
+       For real backends (payu/paynow): redirect to their gateway.
 
-    In a real application with a real payment backend, step 2
-    would not be needed -- the redirect URL from ``prepare``
-    would point to the actual payment gateway.
+    In a real application, the backend selection would typically
+    be done via user preference or business logic, not a form field.
     """
     async with session_factory() as session:
         order = await session.get(OrderModel, order_id)
         if order is None:
-            return RedirectResponse(url="/", status_code=303)
+            raise HTTPException(status_code=404, detail="Order not found")
         session.expunge(order)
 
-    # Step 1: Create payment via the library's REST API.
-    # This runs PaymentFlow.create_payment() + PaymentFlow.prepare()
-    # which transitions the payment to "prepared" via the FSM.
-    base_url = str(request.base_url).rstrip("/")
-    async with httpx.AsyncClient(base_url=base_url) as client:
-        resp = await client.post(
-            "/api/payments/",
-            json={
-                "order_id": order_id,
-                "backend": "dummy",
-                "amount": str(order.amount),
-                "currency": order.currency,
-                "description": order.description,
-            },
+    if backend not in config.backends:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid backend: {backend}. Available: {list(config.backends.keys())}",
         )
-        if resp.status_code != 201:
-            return RedirectResponse(url=f"/orders/{order_id}", status_code=303)
+
+    base_url = str(request.base_url).rstrip("/")
+
+    async with httpx.AsyncClient(base_url=base_url) as client:
+        try:
+            resp = await client.post(
+                "/api/payments/",
+                json={
+                    "order_id": order_id,
+                    "backend": backend,
+                    "amount": str(order.amount),
+                    "currency": order.currency,
+                    "description": order.description,
+                },
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "Payment creation failed: %s - %s",
+                e.response.status_code,
+                e.response.text,
+            )
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail=f"Payment creation failed: {e.response.text}",
+            ) from e
+        except httpx.RequestError as e:
+            logger.error("Payment request error: %s", e)
+            raise HTTPException(
+                status_code=500,
+                detail="Payment service unavailable",
+            ) from e
+
         payment_data = resp.json()
 
     payment_id = payment_data["payment_id"]
 
-    # Step 2: Register with the paywall (fake gateway simulator).
-    # The callback URL points to the library's callback endpoint
-    # which runs PaymentFlow.handle_callback() and updates the
-    # payment status via the FSM.
-    callback_url = f"{base_url}/api/callback/{payment_id}"
+    if backend == "dummy":
+        callback_url = f"{base_url}/api/callback/{payment_id}"
 
-    async with httpx.AsyncClient(base_url=base_url) as client:
-        resp = await client.post(
-            "/paywall/register",
-            json={
-                "ext_id": payment_id,
-                "value": str(order.amount),
-                "currency": order.currency,
-                "description": order.description,
-                "callback": callback_url,
-                "success_url": f"{base_url}/orders/{order_id}",
-                "failure_url": f"{base_url}/orders/{order_id}",
-            },
-        )
-        gateway_data = resp.json()
+        async with httpx.AsyncClient(base_url=base_url) as client:
+            try:
+                resp = await client.post(
+                    "/paywall/register",
+                    json={
+                        "ext_id": payment_id,
+                        "value": str(order.amount),
+                        "currency": order.currency,
+                        "description": order.description,
+                        "callback": callback_url,
+                        "success_url": f"{base_url}/orders/{order_id}",
+                        "failure_url": f"{base_url}/orders/{order_id}",
+                    },
+                )
+                resp.raise_for_status()
+                gateway_data = resp.json()
+            except (httpx.HTTPStatusError, httpx.RequestError) as e:
+                logger.error("Paywall registration failed: %s", e)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Payment gateway registration failed",
+                ) from e
 
-    # Redirect user to the fake gateway authorization page
-    return RedirectResponse(url=gateway_data["url"], status_code=303)
+        return RedirectResponse(url=gateway_data["url"], status_code=303)
+    else:
+        redirect_url = payment_data.get("redirect_url")
+        if not redirect_url:
+            logger.error(
+                "No redirect URL in payment response for backend %s: %s",
+                backend,
+                payment_data,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Payment gateway did not return redirect URL",
+            )
+
+        return RedirectResponse(url=redirect_url, status_code=303)
 
 
 @app.get("/order-success", response_class=HTMLResponse)
