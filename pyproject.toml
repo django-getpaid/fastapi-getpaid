@@ -19,7 +19,7 @@ classifiers = [
 ]
 keywords = ["fastapi", "payments", "getpaid", "payment-gateway", "payment-processing"]
 dependencies = [
-    "python-getpaid-core>=0.1.0",
+    "python-getpaid-core>=3.0.0a2",
     "fastapi>=0.115.0",
     "pydantic-settings>=2.0.0",
 ]
