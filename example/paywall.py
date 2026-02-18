@@ -14,10 +14,8 @@ import httpx
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
 from models import PaywallEntry
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 logger = logging.getLogger(__name__)
 

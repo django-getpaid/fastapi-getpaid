@@ -32,11 +32,10 @@ import httpx
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-
 from getpaid_core.backends.dummy import DummyProcessor
 from getpaid_core.registry import registry as global_registry
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 try:
     from getpaid_payu.processor import PayUProcessor
@@ -52,6 +51,10 @@ try:
 except ImportError:
     PAYNOW_AVAILABLE = False
 
+from models import Order as OrderModel
+from paywall import configure as configure_paywall
+from paywall import router as paywall_router
+
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.contrib.sqlalchemy.models import Base
 from fastapi_getpaid.contrib.sqlalchemy.repository import (
@@ -59,10 +62,6 @@ from fastapi_getpaid.contrib.sqlalchemy.repository import (
 )
 from fastapi_getpaid.contrib.sqlalchemy.retry_store import SQLAlchemyRetryStore
 from fastapi_getpaid.router import create_payment_router
-
-from models import Order as OrderModel
-from paywall import configure as configure_paywall
-from paywall import router as paywall_router
 
 logger = logging.getLogger(__name__)
 
@@ -289,9 +288,10 @@ async def initiate_payment(
         session.expunge(order)
 
     if backend not in config.backends:
+        available = list(config.backends.keys())
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid backend: {backend}. Available: {list(config.backends.keys())}",
+            detail=f"Invalid backend: {backend}. Available: {available}",
         )
 
     base_url = str(request.base_url).rstrip("/")

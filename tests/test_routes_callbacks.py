@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from getpaid_core.exceptions import CommunicationError
-from getpaid_core.exceptions import InvalidCallbackError
+from getpaid_core.exceptions import CommunicationError, InvalidCallbackError
 
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.exceptions import register_exception_handlers
