@@ -5,7 +5,7 @@ def test_version():
     """Package exposes version."""
     from fastapi_getpaid import __version__
 
-    assert __version__ == "3.0.0a2"
+    assert __version__ == "3.0.0a3"
 
 
 def test_create_payment_router_importable():

@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-__version__ = "3.0.0a2"
+__version__ = "3.0.0a3"
 
 __all__ = [
     "CallbackRetryStore",
