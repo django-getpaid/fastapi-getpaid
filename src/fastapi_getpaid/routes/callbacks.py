@@ -39,6 +39,7 @@ async def handle_callback(
     flow = PaymentFlow(
         repository=repository,
         config=config.backends,
+        registry=request.app.state.getpaid_registry,
     )
 
     try:

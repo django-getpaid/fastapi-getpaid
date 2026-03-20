@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse
 from getpaid_core.flow import PaymentFlow
 from getpaid_core.protocols import PaymentRepository
+from getpaid_core.types import TransactionResult
 
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.dependencies import get_config, get_repository
@@ -41,6 +42,7 @@ def _payment_to_response(payment: Any) -> PaymentResponse:
         amount_refunded=payment.amount_refunded,
         fraud_status=payment.fraud_status,
         fraud_message=payment.fraud_message,
+        provider_data=getattr(payment, "provider_data", {}),
     )
 
 
@@ -91,6 +93,7 @@ async def create_payment(
     flow = PaymentFlow(
         repository=repository,
         config=config.backends,
+        registry=request.app.state.getpaid_registry,
     )
 
     payment = await flow.create_payment(
@@ -100,9 +103,13 @@ async def create_payment(
 
     result = await flow.prepare(payment)
 
+    if not isinstance(result, TransactionResult):
+        raise TypeError("PaymentFlow.prepare() must return TransactionResult")
+
     return CreatePaymentResponse(
         payment_id=str(payment.id),
-        redirect_url=result.get("redirect_url"),
-        method=result.get("method", "GET"),
-        form_data=result.get("form_data"),
+        redirect_url=result.redirect_url,
+        method=result.method.value,
+        form_data=result.form_data,
+        provider_data=result.provider_data,
     )

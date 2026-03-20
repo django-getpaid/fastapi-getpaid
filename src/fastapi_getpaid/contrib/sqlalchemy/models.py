@@ -48,6 +48,7 @@ class PaymentModel(Base):
     fraud_message: Mapped[str | None] = mapped_column(
         Text, nullable=True, default=None
     )
+    provider_data: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(tz=UTC),

@@ -15,7 +15,7 @@ FastAPI framework adapter for [getpaid-core](https://github.com/django-getpaid/p
 - **Backend Agnostic**: Supports all `getpaid` processors (PayU, Paynow, Bitpay, Przelewy24, etc.).
 - **Async First**: Fully asynchronous implementation for high performance.
 - **Pluggable Persistence**: Support for SQLAlchemy (built-in) or custom repositories.
-- **FSM Driven**: Reliable payment status management via Finite State Machine.
+- **Semantic Updates**: Reliable payment status management via explicit payment events and provider metadata.
 
 ## Installation
 

@@ -28,6 +28,7 @@ class PaymentResponse(BaseModel):
     amount_refunded: Decimal
     fraud_status: str | None
     fraud_message: str | None
+    provider_data: dict = {}
 
 
 class CreatePaymentResponse(BaseModel):
@@ -37,6 +38,7 @@ class CreatePaymentResponse(BaseModel):
     redirect_url: str | None
     method: str
     form_data: dict | None = None
+    provider_data: dict = {}
 
 
 class PaymentListResponse(BaseModel):

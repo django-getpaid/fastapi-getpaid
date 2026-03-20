@@ -12,10 +12,10 @@ __all__ = [
     "FastAPIPluginRegistry",
     "GetpaidConfig",
     "OrderResolver",
+    "Payment",
     "PaymentListResponse",
     "PaymentNotFoundError",
     "PaymentResponse",
-    "PaymentWithHelpers",
     "__version__",
     "create_payment_router",
 ]
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from fastapi_getpaid.protocols import (
         CallbackRetryStore,
         OrderResolver,
-        PaymentWithHelpers,
+        Payment,
     )
     from fastapi_getpaid.registry import FastAPIPluginRegistry
     from fastapi_getpaid.router import create_payment_router
@@ -57,7 +57,7 @@ def __getattr__(name: str):
         from fastapi_getpaid.exceptions import PaymentNotFoundError
 
         return PaymentNotFoundError
-    if name in ("PaymentWithHelpers", "OrderResolver", "CallbackRetryStore"):
+    if name in ("Payment", "OrderResolver", "CallbackRetryStore"):
         from fastapi_getpaid import protocols
 
         return getattr(protocols, name)

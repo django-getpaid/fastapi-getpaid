@@ -45,13 +45,9 @@ def test_schemas_importable():
 
 def test_protocols_importable():
     """Protocols are importable from package root."""
-    from fastapi_getpaid import (
-        CallbackRetryStore,
-        OrderResolver,
-        PaymentWithHelpers,
-    )
+    from fastapi_getpaid import CallbackRetryStore, OrderResolver, Payment
 
-    assert all([PaymentWithHelpers, OrderResolver, CallbackRetryStore])
+    assert all([Payment, OrderResolver, CallbackRetryStore])
 
 
 def test_registry_importable():

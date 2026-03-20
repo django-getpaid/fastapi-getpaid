@@ -97,6 +97,9 @@ def test_get_payment_flow():
     )
     app.state.getpaid_config = config
     app.state.getpaid_repository = repo
+    from fastapi_getpaid.registry import FastAPIPluginRegistry
+
+    app.state.getpaid_registry = FastAPIPluginRegistry()
 
     @app.get("/test")
     async def handler(flow=Depends(get_payment_flow)):

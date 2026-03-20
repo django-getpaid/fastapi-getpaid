@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from getpaid_core.types import TransactionResult
 
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.exceptions import register_exception_handlers
@@ -39,6 +40,7 @@ def mock_payment():
     payment.amount_refunded = Decimal("0")
     payment.fraud_status = None
     payment.fraud_message = None
+    payment.provider_data = {"customer_ip": "127.0.0.1"}
     return payment
 
 
@@ -135,12 +137,13 @@ def test_create_payment(client, mock_repo, mock_payment, mock_order):
         mock_flow_cls.return_value = instance
         instance.create_payment = AsyncMock(return_value=mock_payment)
         instance.prepare = AsyncMock(
-            return_value={
-                "redirect_url": "https://gateway.example.com/pay",
-                "form_data": None,
-                "method": "GET",
-                "headers": {},
-            }
+            return_value=TransactionResult(
+                redirect_url="https://gateway.example.com/pay",
+                form_data=None,
+                method="GET",
+                external_id="ext-123",
+                provider_data={"customer_ip": "127.0.0.1"},
+            )
         )
 
         test_client = TestClient(app, raise_server_exceptions=False)
@@ -156,6 +159,13 @@ def test_create_payment(client, mock_repo, mock_payment, mock_order):
     data = resp.json()
     assert data["payment_id"] == "pay-1"
     assert data["redirect_url"] == "https://gateway.example.com/pay"
+    assert data["provider_data"] == {"customer_ip": "127.0.0.1"}
+
+
+def test_payment_response_includes_provider_data(client):
+    resp = client.get("/payments/pay-1")
+    assert resp.status_code == 200
+    assert resp.json()["provider_data"] == {"customer_ip": "127.0.0.1"}
 
 
 def test_create_payment_without_resolver(client):

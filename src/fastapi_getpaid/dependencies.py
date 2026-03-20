@@ -27,7 +27,9 @@ def get_payment_flow(request: Request) -> PaymentFlow:
     """Create a PaymentFlow with the configured repository and config."""
     config: GetpaidConfig = request.app.state.getpaid_config
     repo: PaymentRepository = request.app.state.getpaid_repository
+    registry = request.app.state.getpaid_registry
     return PaymentFlow(
         repository=repo,
         config=config.backends,
+        registry=registry,
     )

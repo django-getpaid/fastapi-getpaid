@@ -34,14 +34,13 @@ Pydantic settings model for all payment configuration. See
 
 ## Protocols
 
-### `PaymentWithHelpers`
+### `Payment`
 
 ```python
-from fastapi_getpaid.protocols import PaymentWithHelpers
+from fastapi_getpaid.protocols import Payment
 ```
 
-Extends the core `Payment` protocol with `is_fully_paid()` and
-`is_fully_refunded()` helper methods required by the FSM guards.
+Re-export of the core `Payment` protocol used by the wrapper and repositories.
 
 ### `OrderResolver`
 
@@ -100,7 +99,7 @@ async models and implementations.
 from fastapi_getpaid.contrib.sqlalchemy.models import PaymentModel
 ```
 
-SQLAlchemy 2.0 mapped model implementing the `PaymentWithHelpers` protocol.
+SQLAlchemy 2.0 mapped model implementing the core `Payment` protocol.
 Table name: `getpaid_payment`.
 
 ### `CallbackRetryModel`
@@ -145,10 +144,10 @@ exponential backoff scheduling and retry lifecycle management.
 ### Response schemas
 
 `CreatePaymentResponse`
-: Fields: `payment_id`, `redirect_url`, `method`, `form_data`.
+: Fields: `payment_id`, `redirect_url`, `method`, `form_data`, `provider_data`.
 
 `PaymentResponse`
-: Full payment data including amounts, status, backend, and fraud fields.
+: Full payment data including amounts, status, backend, fraud fields, and `provider_data`.
 
 `PaymentListResponse`
 : Paginated response with `items: list[PaymentResponse]` and `total: int`.

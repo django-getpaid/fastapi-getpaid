@@ -12,9 +12,8 @@ def test_callback_retry_store_is_protocol():
     )
 
 
-def test_payment_with_helpers_protocol():
-    """Payment objects need is_fully_paid and is_fully_refunded for FSM."""
-    from fastapi_getpaid.protocols import PaymentWithHelpers
+def test_payment_protocol_reexport():
+    from fastapi_getpaid.protocols import Payment
 
     class MockPayment:
         id = "p1"
@@ -30,15 +29,10 @@ def test_payment_with_helpers_protocol():
         amount_refunded = Decimal("0")
         fraud_status = ""
         fraud_message = ""
-
-        def is_fully_paid(self) -> bool:
-            return self.amount_paid >= self.amount_required
-
-        def is_fully_refunded(self) -> bool:
-            return self.amount_refunded >= self.amount_paid
+        provider_data = {}
 
     p = MockPayment()
-    assert isinstance(p, PaymentWithHelpers)
+    assert isinstance(p, Payment)
 
 
 def test_order_resolver_protocol():

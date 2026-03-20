@@ -40,6 +40,7 @@ def mock_repo():
     payment.amount_refunded = Decimal("0")
     payment.fraud_status = ""
     payment.fraud_message = ""
+    payment.provider_data = {}
     repo.get_by_id = AsyncMock(return_value=payment)
     repo.save = AsyncMock(return_value=payment)
     return repo
@@ -90,6 +91,22 @@ def test_callback_returns_200_on_success(client, mock_repo):
     raw_body = instance.handle_callback.await_args.kwargs["raw_body"]
     assert isinstance(raw_body, bytes)
     assert b'"status":"paid"' in raw_body
+
+
+def test_callback_flow_uses_app_registry(client, mock_repo, app):
+    with patch(
+        "fastapi_getpaid.routes.callbacks.PaymentFlow",
+    ) as mock_flow_cls:
+        instance = AsyncMock()
+        mock_flow_cls.return_value = instance
+        instance.handle_callback = AsyncMock()
+
+        resp = client.post("/callback/pay-1", json={"status": "paid"})
+
+    assert resp.status_code == 200
+    assert (
+        mock_flow_cls.call_args.kwargs["registry"] is app.state.getpaid_registry
+    )
 
 
 def test_callback_payment_not_found(client, mock_repo):

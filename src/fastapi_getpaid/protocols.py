@@ -13,21 +13,7 @@ __all__ = [
     "OrderResolver",
     "Payment",
     "PaymentRepository",
-    "PaymentWithHelpers",
 ]
-
-
-@runtime_checkable
-class PaymentWithHelpers(Payment, Protocol):
-    """Payment with FSM helper methods.
-
-    The getpaid-core FSM guards require is_fully_paid() and
-    is_fully_refunded() methods on payment objects. This protocol
-    extends Payment to include them.
-    """
-
-    def is_fully_paid(self) -> bool: ...
-    def is_fully_refunded(self) -> bool: ...
 
 
 @runtime_checkable

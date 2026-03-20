@@ -10,7 +10,7 @@ Initial alpha release.
 - `create_payment_router()` — factory producing a fully configured `APIRouter`
 - REST endpoints: create payment, get payment, list payments, handle callback,
   success/failure redirects
-- `PaymentWithHelpers` protocol extending core `Payment` with FSM guards
+- `Payment` protocol re-export from core for wrapper integrations
 - `OrderResolver` protocol for pluggable order lookup
 - `CallbackRetryStore` protocol for webhook retry persistence
 - `FastAPIPluginRegistry` wrapping core registry with per-backend router support

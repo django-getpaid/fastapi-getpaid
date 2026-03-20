@@ -8,6 +8,7 @@ import anyio
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from getpaid_core.exceptions import CommunicationError
+from getpaid_core.types import TransactionResult
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -110,6 +111,7 @@ def test_create_and_get_payment(
     mock_payment.amount_refunded = Decimal("0")
     mock_payment.fraud_status = None
     mock_payment.fraud_message = None
+    mock_payment.provider_data = {"customer_ip": "127.0.0.1"}
 
     with patch(
         "fastapi_getpaid.routes.payments.PaymentFlow",
@@ -118,12 +120,12 @@ def test_create_and_get_payment(
         mock_flow_cls.return_value = instance
         instance.create_payment = AsyncMock(return_value=mock_payment)
         instance.prepare = AsyncMock(
-            return_value={
-                "redirect_url": "https://gateway.example.com/pay",
-                "form_data": None,
-                "method": "GET",
-                "headers": {},
-            }
+            return_value=TransactionResult(
+                redirect_url="https://gateway.example.com/pay",
+                form_data=None,
+                method="GET",
+                provider_data={"customer_ip": "127.0.0.1"},
+            )
         )
 
         with TestClient(app, raise_server_exceptions=False) as client:
@@ -140,6 +142,7 @@ def test_create_and_get_payment(
     assert data["payment_id"] == "test-pay-1"
     assert data["redirect_url"] == "https://gateway.example.com/pay"
     assert data["method"] == "GET"
+    assert data["provider_data"] == {"customer_ip": "127.0.0.1"}
 
 
 def test_callback_with_retry_on_failure(

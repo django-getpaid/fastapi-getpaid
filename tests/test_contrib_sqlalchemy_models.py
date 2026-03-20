@@ -66,6 +66,7 @@ async def test_payment_model_defaults(session):
     assert payment.amount_refunded == Decimal("0")
     assert payment.external_id is None
     assert payment.fraud_status is None
+    assert payment.provider_data == {}
 
 
 async def test_payment_model_is_fully_paid(session):

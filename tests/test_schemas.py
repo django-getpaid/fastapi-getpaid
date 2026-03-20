@@ -43,10 +43,12 @@ def test_payment_response_serialization():
         amount_refunded=Decimal("0"),
         fraud_status=None,
         fraud_message=None,
+        provider_data={"customer_ip": "127.0.0.1"},
     )
     data = resp.model_dump()
     assert data["id"] == "pay-1"
     assert data["status"] == "new"
+    assert data["provider_data"] == {"customer_ip": "127.0.0.1"}
 
 
 def test_create_payment_response():
@@ -58,9 +60,11 @@ def test_create_payment_response():
         redirect_url="https://gateway.example.com/pay",
         method="GET",
         form_data=None,
+        provider_data={"customer_ip": "127.0.0.1"},
     )
     assert resp.redirect_url == "https://gateway.example.com/pay"
     assert resp.method == "GET"
+    assert resp.provider_data == {"customer_ip": "127.0.0.1"}
 
 
 def test_error_response():

@@ -82,11 +82,14 @@ async def test_save_payment(repo):
         backend="dummy",
     )
     payment.external_id = "ext-123"
+    payment.provider_data = {"refund_id": "ref-1"}
     saved = await repo.save(payment)
     assert saved.external_id == "ext-123"
+    assert saved.provider_data == {"refund_id": "ref-1"}
 
     fetched = await repo.get_by_id(payment.id)
     assert fetched.external_id == "ext-123"
+    assert fetched.provider_data == {"refund_id": "ref-1"}
 
 
 async def test_update_status(repo):
@@ -98,10 +101,14 @@ async def test_update_status(repo):
         backend="dummy",
     )
     updated = await repo.update_status(
-        payment.id, "prepared", external_id="ext-456"
+        payment.id,
+        "prepared",
+        external_id="ext-456",
+        provider_data={"customer_ip": "127.0.0.1"},
     )
     assert updated.status == "prepared"
     assert updated.external_id == "ext-456"
+    assert updated.provider_data == {"customer_ip": "127.0.0.1"}
 
 
 async def test_list_by_order(repo):
