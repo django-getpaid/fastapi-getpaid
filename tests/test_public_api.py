@@ -1,11 +1,22 @@
 """Tests for the public API surface."""
 
+from pathlib import Path
+import tomllib
+
 
 def test_version():
     """Package exposes version."""
     from fastapi_getpaid import __version__
 
     assert __version__ == "3.0.0a4"
+
+
+def test_core_dependency_floor():
+    pyproject_data = tomllib.loads(Path("pyproject.toml").read_text())
+    assert (
+        "python-getpaid-core>=3.0.0a4"
+        in pyproject_data["project"]["dependencies"]
+    )
 
 
 def test_create_payment_router_importable():
