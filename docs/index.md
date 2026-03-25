@@ -13,7 +13,7 @@ framework-agnostic payment processing toolkit for Python.
 :::
 
 ```{warning}
-**v0.1.0 (Alpha)** — This is a pre-release. The API may change before the
+**v3.0.0a4 (Alpha)** — This is a pre-release. The API may change before the
 stable v1.0 release.
 ```
 

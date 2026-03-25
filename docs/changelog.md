@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.0.0a4 (2026-03-25)
+
+- Restore persisted order hydration and normalize router error responses.
+- Add Docker-backed integration coverage and CI execution.
+
 ## 0.1.0 (2026-02-14)
 
 Initial alpha release.
