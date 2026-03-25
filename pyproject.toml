@@ -84,5 +84,6 @@ python-version = "3.12"
 
 [dependency-groups]
 dev = [
+    "asyncpg>=0.31.0",
     "ty>=0.0.17",
 ]

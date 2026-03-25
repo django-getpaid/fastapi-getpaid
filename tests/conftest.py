@@ -10,12 +10,15 @@ from sqlalchemy.ext.asyncio import (
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.contrib.sqlalchemy.models import Base
 
+from tests.database import get_test_database_url
+
 
 @pytest.fixture
 async def async_engine():
-    """In-memory SQLite async engine."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    """Async engine for host or Docker-backed integration tests."""
+    engine = create_async_engine(get_test_database_url())
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     yield engine
     await engine.dispose()

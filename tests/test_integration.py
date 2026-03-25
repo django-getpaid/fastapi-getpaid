@@ -1,14 +1,15 @@
 """Full-stack integration tests: router + real SQLAlchemy repo + retry store."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from decimal import Decimal
-from functools import partial
 from unittest.mock import AsyncMock, patch
 
-import anyio
+import pytest
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from getpaid_core.exceptions import CommunicationError
 from getpaid_core.types import TransactionResult
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -25,6 +26,24 @@ from fastapi_getpaid.contrib.sqlalchemy.retry_store import (
 )
 from fastapi_getpaid.exceptions import register_exception_handlers
 from fastapi_getpaid.router import create_payment_router
+
+
+@asynccontextmanager
+async def _test_client(
+    app: FastAPI,
+    *,
+    follow_redirects: bool = True,
+) -> AsyncIterator[AsyncClient]:
+    async with app.router.lifespan_context(app):
+        async with AsyncClient(
+            transport=ASGITransport(
+                app=app,
+                raise_app_exceptions=False,
+            ),
+            base_url="http://testserver",
+            follow_redirects=follow_redirects,
+        ) as client:
+            yield client
 
 
 class DummyOrder:
@@ -81,7 +100,8 @@ def _make_full_app(
     return app
 
 
-def test_full_app_starts(
+@pytest.mark.asyncio
+async def test_full_app_starts(
     getpaid_config: GetpaidConfig,
     async_session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -99,8 +119,8 @@ def test_full_app_starts(
         retry_store=retry_store,
     )
 
-    with TestClient(app, raise_server_exceptions=False) as client:
-        resp = client.get("/pay/payments/nonexistent-id")
+    async with _test_client(app) as client:
+        resp = await client.get("/pay/payments/nonexistent-id")
 
     assert resp.status_code == 404
     data = resp.json()
@@ -108,7 +128,8 @@ def test_full_app_starts(
     assert "nonexistent-id" in data["detail"]
 
 
-def test_create_and_get_payment(
+@pytest.mark.asyncio
+async def test_create_and_get_payment(
     getpaid_config: GetpaidConfig,
     async_session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -159,8 +180,8 @@ def test_create_and_get_payment(
             )
         )
 
-        with TestClient(app, raise_server_exceptions=False) as client:
-            resp = client.post(
+        async with _test_client(app) as client:
+            resp = await client.post(
                 "/pay/payments/",
                 json={
                     "order_id": "order-1",
@@ -176,7 +197,8 @@ def test_create_and_get_payment(
     assert data["provider_data"] == {"customer_ip": "127.0.0.1"}
 
 
-def test_callback_with_retry_on_failure(
+@pytest.mark.asyncio
+async def test_callback_with_retry_on_failure(
     getpaid_config: GetpaidConfig,
     async_session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -191,15 +213,12 @@ def test_callback_with_retry_on_failure(
     )
 
     # Pre-populate a payment in the DB so the callback route can find it.
-    payment = anyio.run(
-        partial(
-            repo.create,
-            order_id="order-cb-1",
-            amount_required=Decimal("50.00"),
-            currency="PLN",
-            backend="dummy",
-            description="Callback test",
-        ),
+    payment = await repo.create(
+        order_id="order-cb-1",
+        amount_required=Decimal("50.00"),
+        currency="PLN",
+        backend="dummy",
+        description="Callback test",
     )
 
     app = _make_full_app(
@@ -217,8 +236,8 @@ def test_callback_with_retry_on_failure(
             side_effect=CommunicationError("gateway timeout"),
         )
 
-        with TestClient(app, raise_server_exceptions=False) as client:
-            resp = client.post(
+        async with _test_client(app) as client:
+            resp = await client.post(
                 f"/pay/callback/{payment.id}",
                 json={"status": "paid"},
             )
@@ -239,7 +258,7 @@ def test_callback_with_retry_on_failure(
             result = await session.execute(stmt)
             return list(result.scalars().all())
 
-    retries = anyio.run(_count_retries)
+    retries = await _count_retries()
 
     assert len(retries) == 1
     retry = retries[0]
@@ -250,7 +269,8 @@ def test_callback_with_retry_on_failure(
     assert retry.attempts == 0
 
 
-def test_success_redirect(
+@pytest.mark.asyncio
+async def test_success_redirect(
     getpaid_config: GetpaidConfig,
     async_session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
@@ -260,15 +280,12 @@ def test_success_redirect(
     )
 
     # Pre-populate a payment so the redirect route can find it.
-    payment = anyio.run(
-        partial(
-            repo.create,
-            order_id="order-redir-1",
-            amount_required=Decimal("75.00"),
-            currency="PLN",
-            backend="dummy",
-            description="Redirect test",
-        ),
+    payment = await repo.create(
+        order_id="order-redir-1",
+        amount_required=Decimal("75.00"),
+        currency="PLN",
+        backend="dummy",
+        description="Redirect test",
     )
 
     app = _make_full_app(
@@ -276,12 +293,8 @@ def test_success_redirect(
         repo=repo,
     )
 
-    with TestClient(
-        app,
-        raise_server_exceptions=False,
-        follow_redirects=False,
-    ) as client:
-        resp = client.get(f"/pay/success/{payment.id}")
+    async with _test_client(app, follow_redirects=False) as client:
+        resp = await client.get(f"/pay/success/{payment.id}")
 
     assert resp.status_code == 307
     location = resp.headers["location"]
