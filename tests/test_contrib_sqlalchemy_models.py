@@ -16,6 +16,32 @@ from fastapi_getpaid.contrib.sqlalchemy.models import (
 )
 
 
+class DummyOrder:
+    def __init__(self, order_id: str = "order-1") -> None:
+        self.id = order_id
+        self.amount = Decimal("100.00")
+        self.currency = "PLN"
+        self.description = "Test order"
+
+    def get_total_amount(self) -> Decimal:
+        return self.amount
+
+    def get_buyer_info(self) -> dict:
+        return {"email": "test@example.com"}
+
+    def get_description(self) -> str:
+        return self.description
+
+    def get_currency(self) -> str:
+        return self.currency
+
+    def get_items(self) -> list[dict]:
+        return []
+
+    def get_return_url(self, success: bool | None = None) -> str:
+        return "/return"
+
+
 @pytest.fixture
 async def engine():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -97,6 +123,20 @@ async def test_payment_model_is_fully_refunded(session):
 
     payment.amount_refunded = Decimal("100")
     assert payment.is_fully_refunded() is True
+
+
+async def test_payment_model_exposes_order_protocol_helpers(session):
+    order = DummyOrder()
+    payment = PaymentModel(
+        order_id="order-1",
+        amount_required=Decimal("100"),
+        currency="PLN",
+        backend="dummy",
+    )
+    payment.order = order
+
+    assert payment.order is order
+    assert payment.order.get_currency() == "PLN"
 
 
 async def test_callback_retry_model_create(session):

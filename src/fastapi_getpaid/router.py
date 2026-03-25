@@ -8,7 +8,11 @@ from getpaid_core.protocols import PaymentRepository
 
 from fastapi_getpaid.config import GetpaidConfig
 from fastapi_getpaid.exceptions import register_exception_handlers
-from fastapi_getpaid.protocols import CallbackRetryStore, OrderResolver
+from fastapi_getpaid.protocols import (
+    CallbackRetryStore,
+    OrderLoader,
+    OrderResolver,
+)
 from fastapi_getpaid.registry import FastAPIPluginRegistry
 from fastapi_getpaid.routes.callbacks import router as callback_router
 from fastapi_getpaid.routes.payments import router as payment_router
@@ -22,6 +26,7 @@ def create_payment_router(
     registry: FastAPIPluginRegistry | None = None,
     order_resolver: OrderResolver | None = None,
     retry_store: CallbackRetryStore | None = None,
+    order_loader: OrderLoader | None = None,
 ) -> APIRouter:
     """Create a configured payment router.
 
@@ -44,7 +49,9 @@ def create_payment_router(
         app.state.getpaid_registry = actual_registry
         app.state.getpaid_order_resolver = order_resolver
         app.state.getpaid_retry_store = retry_store
+        app.state.getpaid_order_loader = order_loader
         register_exception_handlers(app)
+        app.middleware_stack = app.build_middleware_stack()
         actual_registry.discover()
         yield
 

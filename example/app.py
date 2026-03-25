@@ -161,6 +161,7 @@ payment_router = create_payment_router(
     repository=repository,
     order_resolver=ExampleOrderResolver(),
     retry_store=retry_store,
+    order_loader=ExampleOrderResolver().resolve,
 )
 
 

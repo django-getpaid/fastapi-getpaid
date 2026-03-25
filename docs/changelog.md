@@ -13,7 +13,7 @@ Initial alpha release.
 - `Payment` protocol re-export from core for wrapper integrations
 - `OrderResolver` protocol for pluggable order lookup
 - `CallbackRetryStore` protocol for webhook retry persistence
-- `FastAPIPluginRegistry` wrapping core registry with per-backend router support
+- `FastAPIPluginRegistry` wrapping the core registry for FastAPI adapter usage
 - Exception handlers mapping getpaid-core exceptions to HTTP responses
 - Pydantic request/response schemas for all endpoints
 - `fastapi_getpaid.contrib.sqlalchemy` package:

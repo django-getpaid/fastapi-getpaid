@@ -28,6 +28,17 @@ def get_payment_flow(request: Request) -> PaymentFlow:
     config: GetpaidConfig = request.app.state.getpaid_config
     repo: PaymentRepository = request.app.state.getpaid_repository
     registry = request.app.state.getpaid_registry
+
+    register_exception_handlers = getattr(
+        request.app.state,
+        "getpaid_exception_handlers_registered",
+        False,
+    )
+    if not register_exception_handlers:
+        from fastapi_getpaid.exceptions import register_exception_handlers
+
+        register_exception_handlers(request.app)
+
     return PaymentFlow(
         repository=repo,
         config=config.backends,

@@ -156,6 +156,7 @@ def test_callback_stores_retry_on_failure(client, mock_repo):
             json={"status": "paid"},
         )
     assert resp.status_code == 502
+    assert resp.json()["detail"] == "Callback processing failed"
     retry_store.store_failed_callback.assert_called_once()
 
 

@@ -70,7 +70,7 @@ async def handle_callback(
         return JSONResponse(
             status_code=502,
             content={
-                "detail": f"Callback processing failed: {exc}",
+                "detail": "Callback processing failed",
                 "code": "callback_failed",
             },
         )

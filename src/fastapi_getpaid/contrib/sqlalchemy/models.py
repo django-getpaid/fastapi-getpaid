@@ -16,6 +16,7 @@ class PaymentModel(Base):
     """Payment record implementing the Payment protocol."""
 
     __tablename__ = "getpaid_payment"
+    __allow_unmapped__ = True
 
     id: Mapped[str] = mapped_column(
         String(36),
@@ -58,6 +59,7 @@ class PaymentModel(Base):
         default=lambda: datetime.now(tz=UTC),
         onupdate=lambda: datetime.now(tz=UTC),
     )
+    order: object | None = None
 
     def is_fully_paid(self) -> bool:
         """Check if the payment amount has been fully covered."""

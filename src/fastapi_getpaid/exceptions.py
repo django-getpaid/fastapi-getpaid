@@ -19,12 +19,29 @@ class PaymentNotFoundError(Exception):
         super().__init__(f"Payment {payment_id} not found")
 
 
+def _public_detail(exc: Exception) -> str:
+    if isinstance(exc, CommunicationError):
+        return "Payment gateway communication failed"
+    if isinstance(exc, InvalidCallbackError):
+        return "Invalid callback payload"
+    if isinstance(exc, InvalidTransitionError):
+        return "Payment state transition rejected"
+    if isinstance(exc, CredentialsError):
+        return "Payment gateway credentials are invalid"
+    return str(exc)
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Register getpaid exception handlers on a FastAPI app.
 
     More specific handlers must be registered first so FastAPI
     matches them before the generic GetPaidException handler.
     """
+
+    if getattr(app.state, "getpaid_exception_handlers_registered", False):
+        return
+
+    app.state.getpaid_exception_handlers_registered = True
 
     @app.exception_handler(CommunicationError)
     async def _communication_error(
@@ -34,7 +51,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=502,
             content={
-                "detail": str(exc),
+                "detail": _public_detail(exc),
                 "code": "communication_error",
             },
         )
@@ -47,7 +64,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=400,
             content={
-                "detail": str(exc),
+                "detail": _public_detail(exc),
                 "code": "invalid_callback",
             },
         )
@@ -60,7 +77,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=409,
             content={
-                "detail": str(exc),
+                "detail": _public_detail(exc),
                 "code": "invalid_transition",
             },
         )
@@ -73,7 +90,7 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=500,
             content={
-                "detail": str(exc),
+                "detail": _public_detail(exc),
                 "code": "credentials_error",
             },
         )

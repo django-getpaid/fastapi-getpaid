@@ -3,6 +3,8 @@
 Re-exports core protocols and defines FastAPI-specific ones.
 """
 
+from collections.abc import Awaitable
+from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from getpaid_core.protocols import Order, Payment, PaymentRepository
@@ -10,6 +12,7 @@ from getpaid_core.protocols import Order, Payment, PaymentRepository
 __all__ = [
     "CallbackRetryStore",
     "Order",
+    "OrderLoader",
     "OrderResolver",
     "Payment",
     "PaymentRepository",
@@ -25,6 +28,9 @@ class OrderResolver(Protocol):
     """
 
     async def resolve(self, order_id: str) -> Order: ...
+
+
+OrderLoader = Callable[[str], Awaitable[Order]]
 
 
 @runtime_checkable

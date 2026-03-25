@@ -74,8 +74,7 @@ Storage abstraction for the webhook retry queue. Methods:
 from fastapi_getpaid.registry import FastAPIPluginRegistry
 ```
 
-Wraps the core `PluginRegistry` and adds support for registering
-per-backend `APIRouter` instances for custom callback routes.
+Wraps the core `PluginRegistry` for FastAPI adapter integration.
 
 ## Exceptions
 

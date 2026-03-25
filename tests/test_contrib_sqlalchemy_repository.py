@@ -15,6 +15,32 @@ from fastapi_getpaid.contrib.sqlalchemy.repository import (
 )
 
 
+class DummyOrder:
+    def __init__(self, order_id: str = "order-1") -> None:
+        self.id = order_id
+        self.amount = Decimal("100.00")
+        self.currency = "PLN"
+        self.description = "Test order"
+
+    def get_total_amount(self) -> Decimal:
+        return self.amount
+
+    def get_buyer_info(self) -> dict:
+        return {"email": "test@example.com"}
+
+    def get_description(self) -> str:
+        return self.description
+
+    def get_currency(self) -> str:
+        return self.currency
+
+    def get_items(self) -> list[dict]:
+        return []
+
+    def get_return_url(self, success: bool | None = None) -> str:
+        return "/return"
+
+
 @pytest.fixture
 async def engine():
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
@@ -37,7 +63,13 @@ async def session(session_factory):
 
 @pytest.fixture
 def repo(session_factory):
-    return SQLAlchemyPaymentRepository(session_factory=session_factory)
+    async def load_order(order_id: str) -> DummyOrder:
+        return DummyOrder(order_id=order_id)
+
+    return SQLAlchemyPaymentRepository(
+        session_factory=session_factory,
+        order_loader=load_order,
+    )
 
 
 async def test_create_payment(repo):
@@ -54,6 +86,21 @@ async def test_create_payment(repo):
     assert payment.status == "new"
 
 
+async def test_create_payment_preserves_order_object(repo):
+    order = DummyOrder(order_id="order-1")
+
+    payment = await repo.create(
+        order=order,
+        amount_required=Decimal("100.00"),
+        currency="PLN",
+        backend="dummy",
+        description="Test",
+    )
+
+    assert payment.order is order
+    assert payment.order_id == "order-1"
+
+
 async def test_get_by_id(repo):
     """Repository retrieves a payment by ID."""
     created = await repo.create(
@@ -65,6 +112,21 @@ async def test_get_by_id(repo):
     fetched = await repo.get_by_id(created.id)
     assert fetched.id == created.id
     assert fetched.order_id == "order-1"
+
+
+async def test_get_by_id_restores_order_object(repo):
+    order = DummyOrder(order_id="order-1")
+    created = await repo.create(
+        order=order,
+        amount_required=Decimal("100"),
+        currency="PLN",
+        backend="dummy",
+    )
+
+    fetched = await repo.get_by_id(created.id)
+
+    assert fetched.order.get_currency() == "PLN"
+    assert fetched.order.get_description() == "Test order"
 
 
 async def test_get_by_id_not_found(repo):

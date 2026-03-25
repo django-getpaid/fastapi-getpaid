@@ -27,6 +27,32 @@ from fastapi_getpaid.exceptions import register_exception_handlers
 from fastapi_getpaid.router import create_payment_router
 
 
+class DummyOrder:
+    def __init__(self, order_id: str, amount: Decimal, currency: str) -> None:
+        self.id = order_id
+        self.amount = amount
+        self.currency = currency
+        self.description = "Integration order"
+
+    def get_total_amount(self) -> Decimal:
+        return self.amount
+
+    def get_buyer_info(self) -> dict:
+        return {"email": "integration@example.com"}
+
+    def get_description(self) -> str:
+        return self.description
+
+    def get_currency(self) -> str:
+        return self.currency
+
+    def get_items(self) -> list[dict]:
+        return []
+
+    def get_return_url(self, success: bool | None = None) -> str:
+        return "/return"
+
+
 def _make_full_app(
     *,
     config: GetpaidConfig,
@@ -45,6 +71,9 @@ def _make_full_app(
         repository=repo,
         retry_store=retry_store,
         order_resolver=order_resolver,
+        order_loader=(
+            order_resolver.resolve if order_resolver is not None else None
+        ),
     )
     app = FastAPI()
     register_exception_handlers(app)
@@ -89,7 +118,9 @@ def test_create_and_get_payment(
         session_factory=async_session_factory,
     )
     order_resolver = AsyncMock()
-    order_resolver.resolve = AsyncMock(return_value=AsyncMock())
+    order_resolver.resolve = AsyncMock(
+        return_value=DummyOrder("order-1", Decimal("100.00"), "PLN")
+    )
 
     app = _make_full_app(
         config=getpaid_config,
@@ -195,7 +226,7 @@ def test_callback_with_retry_on_failure(
     assert resp.status_code == 502
     data = resp.json()
     assert data["code"] == "callback_failed"
-    assert "gateway timeout" in data["detail"]
+    assert data["detail"] == "Callback processing failed"
 
     # Verify the retry was persisted in the real DB by querying
     # the model table directly (get_due_retries filters by

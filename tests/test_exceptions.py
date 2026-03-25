@@ -44,6 +44,7 @@ def test_communication_error_returns_502():
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/test")
     assert resp.status_code == 502
+    assert resp.json()["detail"] == "Payment gateway communication failed"
     assert resp.json()["code"] == "communication_error"
 
 
@@ -60,6 +61,7 @@ def test_invalid_callback_returns_400():
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/test")
     assert resp.status_code == 400
+    assert resp.json()["detail"] == "Invalid callback payload"
     assert resp.json()["code"] == "invalid_callback"
 
 
@@ -76,6 +78,7 @@ def test_invalid_transition_returns_409():
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/test")
     assert resp.status_code == 409
+    assert resp.json()["detail"] == "Payment state transition rejected"
     assert resp.json()["code"] == "invalid_transition"
 
 
@@ -92,6 +95,7 @@ def test_credentials_error_returns_500():
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/test")
     assert resp.status_code == 500
+    assert resp.json()["detail"] == "Payment gateway credentials are invalid"
     assert resp.json()["code"] == "credentials_error"
 
 
@@ -108,4 +112,5 @@ def test_charge_failure_returns_502():
     client = TestClient(app, raise_server_exceptions=False)
     resp = client.get("/test")
     assert resp.status_code == 502
+    assert resp.json()["detail"] == "Payment gateway communication failed"
     assert resp.json()["code"] == "communication_error"

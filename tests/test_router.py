@@ -108,3 +108,22 @@ def test_create_payment_router_with_order_resolver(config, mock_repo):
 
     with TestClient(app):
         assert app.state.getpaid_order_resolver is resolver
+
+
+def test_create_payment_router_registers_exception_handlers(config, mock_repo):
+    """Including the router is enough to map getpaid errors."""
+    from fastapi_getpaid.router import create_payment_router
+
+    mock_repo.get_by_id = AsyncMock(side_effect=KeyError("missing"))
+    router = create_payment_router(
+        config=config,
+        repository=mock_repo,
+    )
+    app = FastAPI()
+    app.include_router(router)
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get("/payments/missing")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "not_found"

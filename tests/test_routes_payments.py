@@ -13,6 +13,32 @@ from fastapi_getpaid.exceptions import register_exception_handlers
 from fastapi_getpaid.registry import FastAPIPluginRegistry
 
 
+class DummyOrder:
+    def __init__(self, order_id: str = "order-1") -> None:
+        self.id = order_id
+        self.description = "Test order"
+        self.currency = "PLN"
+        self.total = Decimal("100")
+
+    def get_total_amount(self) -> Decimal:
+        return self.total
+
+    def get_buyer_info(self) -> dict:
+        return {"email": "test@example.com"}
+
+    def get_description(self) -> str:
+        return self.description
+
+    def get_currency(self) -> str:
+        return self.currency
+
+    def get_items(self) -> list[dict]:
+        return []
+
+    def get_return_url(self, success: bool | None = None) -> str:
+        return "/return"
+
+
 @pytest.fixture
 def config():
     return GetpaidConfig(
@@ -27,7 +53,7 @@ def config():
 def mock_payment():
     payment = AsyncMock()
     payment.id = "pay-1"
-    payment.order = AsyncMock()
+    payment.order = DummyOrder()
     payment.order_id = "order-1"
     payment.amount_required = Decimal("100")
     payment.currency = "PLN"
@@ -56,14 +82,7 @@ def mock_repo(mock_payment):
 
 @pytest.fixture
 def mock_order():
-    order = AsyncMock()
-    order.get_total_amount = lambda: Decimal("100")
-    order.get_buyer_info = lambda: {"email": "test@example.com"}
-    order.get_description = lambda: "Test order"
-    order.get_currency = lambda: "PLN"
-    order.get_items = lambda: []
-    order.get_return_url = lambda success=None: "/return"
-    return order
+    return DummyOrder()
 
 
 @pytest.fixture
